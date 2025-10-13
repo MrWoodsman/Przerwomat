@@ -2,9 +2,16 @@ import { useEffect, useRef, useState } from 'react'
 // Utils
 import AnimatedTimeDisplay from './utils/formatTime'
 
+// Klucz do zapisu danych w localStorage
+const TIME_STORAGE_KEY = 'przerwomat-elapsedTime';
+
 function App() {
-  // Stan przechowuje czas w MILISEKUNDACH dla większej precyzji
-  const [elapsedTime, setElapsedTime] = useState(0);
+  // 1. WCZYTANIE STANU: Przy pierwszym uruchomieniu wczytujemy czas z localStorage.
+  const [elapsedTime, setElapsedTime] = useState(() => {
+    const savedTime = localStorage.getItem(TIME_STORAGE_KEY);
+    // Jeśli coś znaleziono, użyj tej wartości, w przeciwnym razie zacznij od 0.
+    return savedTime ? parseInt(savedTime, 10) : 0;
+  });
 
   // Refy do przechowywania danych bez powodowania ponownych renderów
   const lastTimeRef = useRef(Date.now());
@@ -38,6 +45,13 @@ function App() {
       clearInterval(intervalIdRef.current);
     };
   }, []); // Pusta tablica [] gwarantuje, że efekt uruchomi się tylko raz
+
+  // 2. ZAPISYWANIE STANU: Ten efekt uruchamia się za każdym razem, gdy `elapsedTime` się zmieni.
+  useEffect(() => {
+    // Zapisujemy aktualną wartość do localStorage.
+    localStorage.setItem(TIME_STORAGE_KEY, elapsedTime.toString());
+  }, [elapsedTime]);
+
 
   return (
     <>
