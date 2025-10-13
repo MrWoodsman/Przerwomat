@@ -1,4 +1,3 @@
-// src/AnimatedTimeDisplay.js
 import NumberFlow from '@number-flow/react';
 
 const AnimatedTimeDisplay = ({ timeInSeconds }) => {
