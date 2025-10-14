@@ -1,9 +1,13 @@
 import { useEffect, useRef, useState } from "react";
+// IMPORT USTAWIEŃ
+import { loadSettings } from "../utils/settingsManager";
+
+const settings = loadSettings()
 
 export const useTimer = () => {
     const SESSION_STORAGE_KEY = 'przerwomat-session';
     const BREAKS_SAVE_KEY = 'przerwomat-breaks-data';
-    const WORK_SESSION_DURATION = 45 * 60 * 1000;
+    const WORK_SESSION_DURATION = settings.WORK_SESSION_DURATION;
 
     const [elapsedTime, setElapsedTime] = useState(() => {
         const savedSession = localStorage.getItem(SESSION_STORAGE_KEY);
