@@ -1,3 +1,5 @@
+import { BreakText } from "./breakText"
+
 export const ActionBar = ({ timeToBreak, isBreakTime, isCurrentlyOnBreak, currentBreakDuration, handleBreakToggle }) => {
     // Różne style i tekst przycisku zależne od stanu
     const getButtonProps = () => {
@@ -27,7 +29,7 @@ export const ActionBar = ({ timeToBreak, isBreakTime, isCurrentlyOnBreak, curren
     return (
         <div className='button-section flex flex-col gap-2 p-2'>
             <p className='text-center text-neutral-400 text-sm'>
-                Następna przerwa za <TimeToBreakDisplay timeInMillis={timeToBreak} />
+                Następna przerwa za <BreakText timeInMillis={timeToBreak} />
             </p>
             <button
                 onClick={handleBreakToggle}

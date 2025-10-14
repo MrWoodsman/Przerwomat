@@ -1,62 +1,59 @@
 import { useEffect, useRef, useState } from "react";
 
 export const useTimer = () => {
-    const SESSION_STORAGE_KEY = 'przerwomat_session';
-    const BREAKS_SAVE_KEY = 'przerwomat-breaks-datas';
-    const WORK_SESSION_DURATION = 1.5 * 60 * 1000; // 1.5 minuty w milisekundach
+    const SESSION_STORAGE_KEY = 'przerwomat-session';
+    const BREAKS_SAVE_KEY = 'przerwomat-breaks-data';
+    const WORK_SESSION_DURATION = 1 * 60 * 1000;
 
     const [elapsedTime, setElapsedTime] = useState(() => {
-        const savcedSession = localStorage.getItem(SESSION_STORAGE_KEY);
+        const savedSession = localStorage.getItem(SESSION_STORAGE_KEY);
         const today = new Date().toISOString().split('T')[0];
-
-        if (savcedSession) {
+        if (savedSession) {
             try {
-                const { time, date } = JSON.parse(savcedSession)
-                if (date === today) return time
-            } catch (e) { console.error("Błąd parsowania danych sesji: ", e) }
+                const { time, date } = JSON.parse(savedSession);
+                if (date === today) return time;
+            } catch (e) { console.error("Błąd parsowania danych sesji:", e); }
         }
-        return 0
-    })
+        return 0;
+    });
 
     const [breaksDataSave, setBreaksDataSave] = useState(() => {
-        const savedData = localStorage.getItem(BREAKS_SAVE_KEY)
+        const savedData = localStorage.getItem(BREAKS_SAVE_KEY);
         if (savedData) {
             try {
-                const parsedData = JSON.parse(savedData)
-                return Array.isArray(parsedData) ? parsedData : []
-            } catch (e) {
-                console.error("Błąd parsowania danych przerw: ", e);
-            }
-            return []
+                const parsedData = JSON.parse(savedData);
+                return Array.isArray(parsedData) ? parsedData : [];
+            } catch (e) { console.error("Błąd parsowania danych przerw:", e); }
         }
-    })
+        return [];
+    });
 
-    const [timeToBreak, setTimeToBreak] = useState(WORK_SESSION_DURATION - (elapsedTime % WORK_SESSION_DURATION))
-    const [isBreakTime, setIsBreakTime] = useState(timeToBreak <= 0)
-    const [isCurrentlyOnBreak, setIsCurrentlyOnBreak] = useState(false)
-    const [currentBreakDuration, setCurrentBreakDuration] = useState(0)
+    const [timeToBreak, setTimeToBreak] = useState(WORK_SESSION_DURATION - (elapsedTime % WORK_SESSION_DURATION));
+    const [isBreakTime, setIsBreakTime] = useState(timeToBreak <= 0);
+    const [isCurrentlyOnBreak, setIsCurrentlyOnBreak] = useState(false);
+    const [currentBreakDuration, setCurrentBreakDuration] = useState(0);
 
-    const breakStartRef = useRef(null)
-    const lastTimeRef = useRef(Date.now())
+    const breakStartRef = useRef(null);
+    const lastTimeRef = useRef(Date.now());
 
     useEffect(() => {
-        lastTimeRef.current = Date.now()
+        lastTimeRef.current = Date.now();
         const tick = () => {
-            const now = Date.now()
-            const delta = now - lastTimeRef.current
+            const now = Date.now();
+            const delta = now - lastTimeRef.current;
             if (delta < 2000) {
                 if (isCurrentlyOnBreak) {
-                    setCurrentBreakDuration(now - breakStartRef.current)
+                    setCurrentBreakDuration(now - breakStartRef.current);
                 } else {
-                    setElapsedTime(prev => prev + delta)
-                    setTimeToBreak(prev => prev - delta)
+                    setElapsedTime(prev => prev + delta);
+                    setTimeToBreak(prev => prev - delta);
                 }
             }
-            lastTimeRef.current = now
-        }
-        const intervalId = setInterval(tick, 100)
-        return () => clearInterval(intervalId)
-    }, [isCurrentlyOnBreak])
+            lastTimeRef.current = now;
+        };
+        const intervalId = setInterval(tick, 100);
+        return () => clearInterval(intervalId);
+    }, [isCurrentlyOnBreak]);
 
     useEffect(() => {
         if (!isCurrentlyOnBreak) {
@@ -91,4 +88,4 @@ export const useTimer = () => {
     const totalSessionTime = elapsedTime + totalBreaksDuration + currentBreakDuration;
 
     return { elapsedTime, totalSessionTime, timeToBreak, isBreakTime, isCurrentlyOnBreak, currentBreakDuration, handleBreakToggle };
-}
+};
