@@ -29,7 +29,7 @@ export const ActionBar = ({ timeToBreak, isBreakTime, isCurrentlyOnBreak, curren
             return {
                 content: (
                     <>
-                        Czas przerwy <AnimatedTimeDisplay timeInSeconds={Math.floor(currentBreakDuration / 1000)} className={'font-bold'} />
+                        Czas przerwy <AnimatedTimeDisplay timeInSeconds={Math.floor(currentBreakDuration / 1000)} className={'font-bold text-orange-400'} />
                     </>
                 ),
                 className: 'bg-orange-500 hover:bg-orange-600'
