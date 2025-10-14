@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 // Utils
-import AnimatedTimeDisplay from './components/formatTime'
+import AnimatedTimeDisplay from './components/animatedTimeDisplay'
 import { BreakText } from './components/breakText';
 
 // Klucze do zapisu danych w localStorage
