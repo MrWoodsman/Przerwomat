@@ -1,48 +1,26 @@
 import { useEffect, useRef, useState } from "react";
-// IMPORT USTAWIEŃ
-import { loadSettings } from "../utils/settingsManager";
 
-const settings = loadSettings()
-
-export const useTimer = () => {
-    const SESSION_STORAGE_KEY = 'przerwomat-session';
-    const BREAKS_SAVE_KEY = 'przerwomat-breaks-data';
-    const WORK_SESSION_DURATION = settings.WORK_SESSION_DURATION;
-
+export const useTimer = (workSessionDuration) => {
     const [elapsedTime, setElapsedTime] = useState(() => {
-        const savedSession = localStorage.getItem(SESSION_STORAGE_KEY);
-        const today = new Date().toISOString().split('T')[0];
-        if (savedSession) {
-            try {
-                const { time, date } = JSON.parse(savedSession);
-                if (date === today) return time;
-            } catch (e) { console.error("Błąd parsowania danych sesji:", e); }
-        }
-        return 0;
+        const s = localStorage.getItem('przerwomat-session');
+        if (!s) return 0;
+        try { const { time, date } = JSON.parse(s); return date === new Date().toISOString().split('T')[0] ? time : 0; } catch { return 0; }
+    });
+    const [breaksData, setBreaksData] = useState(() => {
+        const b = localStorage.getItem('przerwomat-breaks-data');
+        if (!b) return [];
+        try { const p = JSON.parse(b); return Array.isArray(p) ? p : []; } catch { return []; }
     });
 
-    const [breaksDataSave, setBreaksDataSave] = useState(() => {
-        const savedData = localStorage.getItem(BREAKS_SAVE_KEY);
-        if (savedData) {
-            try {
-                const parsedData = JSON.parse(savedData);
-                return Array.isArray(parsedData) ? parsedData : [];
-            } catch (e) { console.error("Błąd parsowania danych przerw:", e); }
-        }
-        return [];
-    });
-
-    const [timeToBreak, setTimeToBreak] = useState(WORK_SESSION_DURATION - (elapsedTime % WORK_SESSION_DURATION));
-    const [isBreakTime, setIsBreakTime] = useState(timeToBreak <= 0);
+    const [timeToBreak, setTimeToBreak] = useState(workSessionDuration);
+    const [isBreakTime, setIsBreakTime] = useState(false); // Jawny stan informujący o czasie na przerwę
     const [isCurrentlyOnBreak, setIsCurrentlyOnBreak] = useState(false);
     const [currentBreakDuration, setCurrentBreakDuration] = useState(0);
-
     const breakStartRef = useRef(null);
     const lastTimeRef = useRef(Date.now());
 
     useEffect(() => {
-        lastTimeRef.current = Date.now();
-        const tick = () => {
+        const timerId = setInterval(() => {
             const now = Date.now();
             const delta = now - lastTimeRef.current;
             if (delta < 2000) {
@@ -50,46 +28,66 @@ export const useTimer = () => {
                     setCurrentBreakDuration(now - breakStartRef.current);
                 } else {
                     setElapsedTime(prev => prev + delta);
-                    setTimeToBreak(prev => prev - delta);
                 }
             }
             lastTimeRef.current = now;
-        };
-        const intervalId = setInterval(tick, 100);
-        return () => clearInterval(intervalId);
+        }, 100);
+        return () => clearInterval(timerId);
     }, [isCurrentlyOnBreak]);
+
+    // Poprawiona logika obliczania czasu do przerwy
+    useEffect(() => {
+        const lastBreak = breaksData.length > 0 ? breaksData[breaksData.length - 1] : null;
+        const elapsedTimeAtLastBreakEnd = lastBreak?.elapsedTimeOnEnd ?? 0;
+
+        const workTimeInCurrentSession = elapsedTime - elapsedTimeAtLastBreakEnd;
+
+        // 1. Sprawdź, czy nadszedł czas na przerwę na podstawie aktualnych danych
+        const shouldBeBreakTime = !isCurrentlyOnBreak && workTimeInCurrentSession >= workSessionDuration;
+
+        // 2. Ustaw stan `isBreakTime`
+        setIsBreakTime(shouldBeBreakTime);
+
+        // 3. Oblicz czas do wyświetlenia w UI
+        if (shouldBeBreakTime) {
+            setTimeToBreak(0);
+        } else {
+            const timeToNextBreak = workSessionDuration - workTimeInCurrentSession;
+            setTimeToBreak(timeToNextBreak);
+        }
+    }, [workSessionDuration, elapsedTime, breaksData, isCurrentlyOnBreak]);
 
     useEffect(() => {
         if (!isCurrentlyOnBreak) {
-            const today = new Date().toISOString().split('T')[0];
-            const sessionData = { time: elapsedTime, date: today };
-            localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sessionData));
+            localStorage.setItem('przerwomat-session', JSON.stringify({ time: elapsedTime, date: new Date().toISOString().split('T')[0] }));
         }
-        if (timeToBreak <= 0 && !isCurrentlyOnBreak) {
-            setIsBreakTime(true);
-        }
-    }, [elapsedTime, timeToBreak, isCurrentlyOnBreak]);
+    }, [elapsedTime, isCurrentlyOnBreak]);
 
     const handleBreakToggle = () => {
-        if (isCurrentlyOnBreak) {
+        if (isCurrentlyOnBreak) { // Kończenie przerwy
             const endTime = Date.now();
-            const newBreak = { startTime: breakStartRef.current, endTime, duration: endTime - breakStartRef.current };
-            const updatedBreaks = [...breaksDataSave, newBreak];
-            setBreaksDataSave(updatedBreaks);
-            localStorage.setItem(BREAKS_SAVE_KEY, JSON.stringify(updatedBreaks));
-            setIsCurrentlyOnBreak(false);
+            const newBreak = {
+                startTime: breakStartRef.current,
+                endTime,
+                duration: endTime - breakStartRef.current,
+                elapsedTimeOnEnd: elapsedTime // Zapisujemy czas pracy na koniec przerwy
+            };
+            const updatedBreaks = [...breaksData, newBreak];
+            setBreaksData(updatedBreaks);
+            localStorage.setItem('przerwomat-breaks-data', JSON.stringify(updatedBreaks));
+
+            // KLUCZOWE: Resetujemy flagę i liczniki
             setIsBreakTime(false);
-            setTimeToBreak(WORK_SESSION_DURATION);
+            setTimeToBreak(workSessionDuration);
             setCurrentBreakDuration(0);
-            breakStartRef.current = null;
-        } else {
-            setIsCurrentlyOnBreak(true);
+            setIsCurrentlyOnBreak(false);
+        } else { // Zaczynanie przerwy
             breakStartRef.current = Date.now();
+            setIsCurrentlyOnBreak(true);
         }
     };
 
-    const totalBreaksDuration = breaksDataSave.reduce((acc, br) => acc + br.duration, 0);
+    const totalBreaksDuration = breaksData.reduce((acc, br) => acc + br.duration, 0);
     const totalSessionTime = elapsedTime + totalBreaksDuration + currentBreakDuration;
-
     return { elapsedTime, totalSessionTime, timeToBreak, isBreakTime, isCurrentlyOnBreak, currentBreakDuration, handleBreakToggle };
 };
