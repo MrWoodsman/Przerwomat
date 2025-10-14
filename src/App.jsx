@@ -1,19 +1,9 @@
-// import { useEffect, useRef, useState } from 'react'
-// UTILS
-import AnimatedTimeDisplay from './components/animatedTimeDisplay'
-import { BreakText } from './components/breakText';
 // HOOKS
 import { useTimer } from './hooks/useTimer';
+// COMPONENTS
 import { Statistics } from './components/statistics';
 import { ActionBar } from './components/actionBar';
 import { TimerDisplay } from './components/TimerDisplay';
-
-// Klucze do zapisu danych w localStorage
-const SESSION_STORAGE_KEY = 'przerwomat-session';
-// Czas pracy do przerwy (ustawiony na 1 minutę dla łatwiejszego testowania)
-const WORK_SESSION_DURATION = 1 * 60 * 1000;
-
-const BREAKS_SAVE_KEY = 'przerwomat-braks'
 
 function App() {
   const {

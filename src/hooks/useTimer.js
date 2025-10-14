@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 export const useTimer = () => {
     const SESSION_STORAGE_KEY = 'przerwomat-session';
     const BREAKS_SAVE_KEY = 'przerwomat-breaks-data';
-    const WORK_SESSION_DURATION = 1 * 60 * 1000;
+    const WORK_SESSION_DURATION = 45 * 60 * 1000;
 
     const [elapsedTime, setElapsedTime] = useState(() => {
         const savedSession = localStorage.getItem(SESSION_STORAGE_KEY);
